@@ -12,22 +12,24 @@ current time
 total duration
 play/pause button
 back and forward by 10s
-get title at /topic.txt
+get title at /title.txt
 update page title
-play /exg.mp3
+play /audio.mp3
 loop audio
 scrubber
 
 once audio is downloaded
-edit it and add 10s grand pause
+edit it and add 10s end pause
 use url blob object
 use as main audio
 
 if audio is playing 
-play a soft binaural beats
+play binaural beats
 in the background
-0.006 gain
+102 hz right
+100 hz left
+0.004 gain
 fade in
 
 display text as paragraphs
-get text at /exg.txt
+get text at /text.txt

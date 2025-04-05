@@ -1,342 +1,415 @@
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Loading...</title>
+    <!-- The title will be updated dynamically from /title.txt -->
+    <title>Loading…</title>
     <style>
-      /* Dark Mode, Modern, Mobile Friendly Styles */
-      * {
-        box-sizing: border-box;
+      /* Global Dark Mode & Mobile Friendly */
+      :root {
+        --bg-color: #121212;
+        --text-color: #e0e0e0;
+        --accent-color: #1e88e5;
+        --accent-hover: #1565c0;
+        --border-color: #333;
       }
       body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
         margin: 0;
-        background-color: #121212;
-        color: #e0e0e0;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-          "Segoe UI Symbol";
-        line-height: 1.6;
+          Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
       }
-      .container {
-        max-width: 600px;
+      #app {
+        max-width: 500px;
         margin: 0 auto;
         padding: 20px;
       }
-      h1,
-      h2 {
+      h1 {
         text-align: center;
+        font-size: 1.8em;
       }
-      .player {
-        margin-top: 30px;
+      /* Player Styles */
+      #player {
+        border: 1px solid var(--border-color);
         padding: 15px;
-        background-color: #1e1e1e;
         border-radius: 8px;
-      }
-      .player-controls {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 15px;
+        background-color: #1e1e1e;
         margin-bottom: 20px;
       }
-      button {
-        background-color: #333;
-        border: none;
-        color: #e0e0e0;
-        padding: 10px 15px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: background-color 0.2s ease;
+      #timeDisplay {
+        text-align: center;
+        margin-bottom: 10px;
+        font-size: 1.1em;
       }
-      button:hover {
-        background-color: #444;
-      }
-      .scrubber {
+      input[type="range"] {
         width: 100%;
+        margin: 10px 0;
       }
-      .scrubber input[type="range"] {
-        width: 100%;
-      }
-      .time-display {
+      #controls {
         display: flex;
-        justify-content: space-between;
-        font-size: 0.9rem;
-        margin-top: 5px;
+        justify-content: center;
       }
-      p {
-        margin-bottom: 1em;
+      #controls button {
+        background-color: var(--accent-color);
+        color: #fff;
+        border: none;
+        padding: 10px 15px;
+        margin: 0 5px;
+        border-radius: 4px;
+        font-size: 1em;
+        cursor: pointer;
+      }
+      #controls button:hover {
+        background-color: var(--accent-hover);
+      }
+      /* Content Text */
+      #content p {
+        line-height: 1.6;
+        margin-bottom: 15px;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1 id="page-title">Loading Topic...</h1>
-      <div class="player">
-        <div class="player-controls">
-          <button id="backBtn">« 10s</button>
-          <button id="playPauseBtn">Play</button>
-          <button id="forwardBtn">10s »</button>
-        </div>
-        <div class="scrubber">
-          <input type="range" id="scrubber" min="0" value="0" step="0.1" />
-          <div class="time-display">
-            <span id="currentTime">0:00</span>
-            <span id="totalDuration">0:00</span>
-          </div>
-        </div>
-      </div>
-      <div id="content">
-        <!-- Paragraphs from /exg.txt will be inserted here -->
-      </div>
-    </div>
-    <script>
-      // Global Variables
-      let mainAudio = null; // The main audio element
-      let binauralCtx = null;
-      let binauralOsc1 = null;
-      let binauralOsc2 = null;
-      let binauralGain = null;
+    <div id="app">
+      <!-- Page title will be updated from /title.txt -->
+      <h1 id="pageTitle">Loading…</h1>
 
-      // Utility: Format seconds to MM:SS
-      function formatTime(seconds) {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return mins + ":" + (secs < 10 ? "0" + secs : secs);
+      <!-- Music Player -->
+      <div id="player">
+        <div id="timeDisplay">
+          <span id="currentTime">00:00</span> /
+          <span id="totalTime">00:00</span>
+        </div>
+        <input id="scrubber" type="range" min="0" max="0" step="0.01" value="0" />
+        <div id="controls">
+          <button id="backButton">-10s</button>
+          <button id="playPauseButton">Play</button>
+          <button id="forwardButton">+10s</button>
+        </div>
+      </div>
+
+      <!-- Hidden audio element used as the main audio source -->
+      <audio id="mainAudio" loop style="display: none;"></audio>
+
+      <!-- Content fetched from /text.txt will be appended here -->
+      <div id="content"></div>
+    </div>
+
+    <script>
+      // Global variables
+      let audioCtx;
+      let binauralPlaying = false;
+      let binauralNodes = {};
+      const fadeDuration = 2; // seconds for binaural fade-in
+
+      // Utility: Format seconds into mm:ss
+      function formatTime(sec) {
+        if (isNaN(sec)) return "00:00";
+        const minutes = Math.floor(sec / 60);
+        const seconds = Math.floor(sec % 60);
+        return (
+          (minutes < 10 ? "0" + minutes : minutes) +
+          ":" +
+          (seconds < 10 ? "0" + seconds : seconds)
+        );
       }
 
-      // Encode an AudioBuffer as a WAV file (PCM 16-bit)
-      function encodeWAV(audioBuffer) {
-        const numChannels = audioBuffer.numberOfChannels;
-        const sampleRate = audioBuffer.sampleRate;
-        const format = 1; // PCM
-        const bitDepth = 16;
+      // Convert an AudioBuffer to a WAV formatted ArrayBuffer.
+      // This implementation creates a 16-bit PCM WAV.
+      function audioBufferToWav(buffer, opt) {
+        opt = opt || {};
+        const numChannels = buffer.numberOfChannels;
+        const sampleRate = buffer.sampleRate;
+        const format = opt.float32 ? 3 : 1;
+        const bitDepth = format === 3 ? 32 : 16;
+      
+        let result;
+        const numSamples = buffer.length * numChannels;
         const blockAlign = numChannels * (bitDepth / 8);
-        const bytesPerSample = bitDepth / 8;
-        const bufferLength = audioBuffer.length * blockAlign;
-        const wavBuffer = new ArrayBuffer(44 + bufferLength);
-        const view = new DataView(wavBuffer);
-
-        let offset = 0;
-        function writeString(s) {
-          for (let i = 0; i < s.length; i++) {
-            view.setUint8(offset + i, s.charCodeAt(i));
+        const byteRate = sampleRate * blockAlign;
+        const dataSize = buffer.length * blockAlign;
+        const bufferSize = 44 + dataSize;
+        const arrayBuffer = new ArrayBuffer(bufferSize);
+        const view = new DataView(arrayBuffer);
+      
+        // Helper to write strings to the DataView
+        function writeString(view, offset, string) {
+          for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
           }
-          offset += s.length;
         }
-
+      
+        let offset = 0;
         // RIFF identifier
-        writeString("RIFF");
-        // file length minus RIFF identifier length and file description length = fileSize - 8
-        view.setUint32(offset, 36 + bufferLength, true);
+        writeString(view, offset, "RIFF");
         offset += 4;
-        writeString("WAVE");
-        writeString("fmt ");
+        // RIFF chunk length
+        view.setUint32(offset, 36 + dataSize, true);
+        offset += 4;
+        // RIFF type
+        writeString(view, offset, "WAVE");
+        offset += 4;
+        // Format chunk identifier
+        writeString(view, offset, "fmt ");
+        offset += 4;
+        // Format chunk length
         view.setUint32(offset, 16, true);
         offset += 4;
+        // Sample format (raw)
         view.setUint16(offset, format, true);
         offset += 2;
+        // Number of channels
         view.setUint16(offset, numChannels, true);
         offset += 2;
+        // Sample rate
         view.setUint32(offset, sampleRate, true);
         offset += 4;
-        view.setUint32(offset, sampleRate * blockAlign, true);
+        // Byte rate (sample rate * block align)
+        view.setUint32(offset, byteRate, true);
         offset += 4;
+        // Block align (channel count * bytes per sample)
         view.setUint16(offset, blockAlign, true);
         offset += 2;
+        // Bits per sample
         view.setUint16(offset, bitDepth, true);
         offset += 2;
-        writeString("data");
-        view.setUint32(offset, bufferLength, true);
+        // Data chunk identifier
+        writeString(view, offset, "data");
         offset += 4;
-
-        // Write interleaved data
-        const channels = [];
+        // Data chunk length
+        view.setUint32(offset, dataSize, true);
+        offset += 4;
+      
+        // Write interleaved PCM samples
+        const channelData = [];
         for (let i = 0; i < numChannels; i++) {
-          channels.push(audioBuffer.getChannelData(i));
+          channelData.push(buffer.getChannelData(i));
         }
-        for (let i = 0; i < audioBuffer.length; i++) {
+      
+        for (let i = 0; i < buffer.length; i++) {
           for (let channel = 0; channel < numChannels; channel++) {
-            let sample = channels[channel][i];
+            let sample = channelData[channel][i];
             // Clamp the sample
             sample = Math.max(-1, Math.min(1, sample));
-            // Scale to 16-bit signed integer
-            let intSample =
-              sample < 0 ? sample * 0x8000 : sample * 0x7fff;
-            view.setInt16(offset, intSample, true);
-            offset += bytesPerSample;
+            if (format === 1) {
+              // 16-bit PCM
+              const intSample =
+                sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+              view.setInt16(offset, intSample, true);
+              offset += 2;
+            } else {
+              view.setFloat32(offset, sample, true);
+              offset += 4;
+            }
           }
         }
-        return wavBuffer;
+        return arrayBuffer;
       }
 
-      // Load and process the main audio file (/exg.mp3), adding a 10s grand pause.
-      async function loadMainAudio() {
-        try {
-          const response = await fetch("/exg.mp3");
-          const arrayBuffer = await response.arrayBuffer();
-          const tempAudioCtx =
-            new (window.AudioContext || window.webkitAudioContext)();
-          // Decode the original MP3 file into an AudioBuffer.
-          const originalBuffer = await tempAudioCtx.decodeAudioData(arrayBuffer);
-          const extraSeconds = 10;
-          const extraSamples = extraSeconds * originalBuffer.sampleRate;
-          // Create a new AudioBuffer with extra 10 seconds (appended silence)
-          const newBuffer = tempAudioCtx.createBuffer(
-            originalBuffer.numberOfChannels,
-            originalBuffer.length + extraSamples,
-            originalBuffer.sampleRate
-          );
-          for (let channel = 0; channel < originalBuffer.numberOfChannels; channel++) {
-            const channelData = newBuffer.getChannelData(channel);
-            channelData.set(originalBuffer.getChannelData(channel), 0);
-            // The remaining samples remain as 0 (silence)
-          }
-          // Encode the new AudioBuffer as a WAV file.
-          const wavArrayBuffer = encodeWAV(newBuffer);
-          const blob = new Blob([wavArrayBuffer], { type: "audio/wav" });
-          const blobUrl = URL.createObjectURL(blob);
-          return { blobUrl: blobUrl, duration: newBuffer.duration };
-        } catch (error) {
-          console.error("Error loading main audio:", error);
+      // Initialize AudioContext (will be resumed on user interaction)
+      function initAudioContext() {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
       }
 
-      // Start the soft binaural beats in the background.
+      // Binaural Beats: Start two oscillators with slightly different frequencies.
       function startBinauralBeats() {
-        if (!binauralCtx) {
-          binauralCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (binauralCtx.state === "suspended") {
-          binauralCtx.resume();
-        }
-        // Create a GainNode for volume control with fade-in.
-        binauralGain = binauralCtx.createGain();
-        binauralGain.gain.setValueAtTime(0, binauralCtx.currentTime);
-        // Ramp to a soft volume (0.006 gain) over 2 seconds.
-        binauralGain.gain.linearRampToValueAtTime(0.006, binauralCtx.currentTime + 2);
-
-        // Create two oscillators with slightly different frequencies.
-        binauralOsc1 = binauralCtx.createOscillator();
-        binauralOsc2 = binauralCtx.createOscillator();
-        binauralOsc1.frequency.value = 200;
-        binauralOsc2.frequency.value = 207; // 7 Hz difference for binaural effect
-
-        // Create stereo panners for left and right channels.
-        const panner1 = binauralCtx.createStereoPanner();
-        panner1.pan.value = -1; // left speaker
-        const panner2 = binauralCtx.createStereoPanner();
-        panner2.pan.value = 1; // right speaker
-
-        // Connect the oscillators through their panners to the gain node.
-        binauralOsc1.connect(panner1);
-        binauralOsc2.connect(panner2);
-        panner1.connect(binauralGain);
-        panner2.connect(binauralGain);
-        binauralGain.connect(binauralCtx.destination);
-
-        binauralOsc1.start();
-        binauralOsc2.start();
+        // Prevent multiple instances
+        if (binauralPlaying) return;
+        initAudioContext();
+        const now = audioCtx.currentTime;
+      
+        // Left oscillator: 100 Hz
+        const leftOsc = audioCtx.createOscillator();
+        leftOsc.frequency.value = 100;
+        const leftGain = audioCtx.createGain();
+        leftGain.gain.setValueAtTime(0, now);
+        leftGain.gain.linearRampToValueAtTime(0.004, now + fadeDuration);
+        const leftPanner = audioCtx.createStereoPanner();
+        leftPanner.pan.value = -1; // full left
+      
+        // Right oscillator: 102 Hz
+        const rightOsc = audioCtx.createOscillator();
+        rightOsc.frequency.value = 102;
+        const rightGain = audioCtx.createGain();
+        rightGain.gain.setValueAtTime(0, now);
+        rightGain.gain.linearRampToValueAtTime(0.004, now + fadeDuration);
+        const rightPanner = audioCtx.createStereoPanner();
+        rightPanner.pan.value = 1; // full right
+      
+        // Connect nodes: oscillator -> gain -> panner -> destination
+        leftOsc.connect(leftGain);
+        leftGain.connect(leftPanner);
+        leftPanner.connect(audioCtx.destination);
+      
+        rightOsc.connect(rightGain);
+        rightGain.connect(rightPanner);
+        rightPanner.connect(audioCtx.destination);
+      
+        // Start oscillators immediately
+        leftOsc.start();
+        rightOsc.start();
+      
+        binauralNodes = {
+          leftOsc,
+          rightOsc,
+          leftGain,
+          rightGain,
+          leftPanner,
+          rightPanner,
+        };
+        binauralPlaying = true;
       }
 
-      // Stop the binaural beats.
+      // Stop the binaural beats
       function stopBinauralBeats() {
-        if (binauralOsc1) {
-          try {
-            binauralOsc1.stop();
-          } catch (e) {}
-          binauralOsc1.disconnect();
-          binauralOsc1 = null;
+        if (!binauralPlaying) return;
+        try {
+          binauralNodes.leftOsc.stop();
+          binauralNodes.rightOsc.stop();
+        } catch (err) {
+          console.error(err);
         }
-        if (binauralOsc2) {
-          try {
-            binauralOsc2.stop();
-          } catch (e) {}
-          binauralOsc2.disconnect();
-          binauralOsc2 = null;
-        }
-        if (binauralGain) {
-          binauralGain.disconnect();
-          binauralGain = null;
+        binauralNodes = {};
+        binauralPlaying = false;
+      }
+
+      // Update the timer display and scrubber
+      function updateTime() {
+        const audio = document.getElementById("mainAudio");
+        const currentTimeElem = document.getElementById("currentTime");
+        const totalTimeElem = document.getElementById("totalTime");
+        const scrubber = document.getElementById("scrubber");
+        currentTimeElem.textContent = formatTime(audio.currentTime);
+        if (!isNaN(audio.duration) && audio.duration > 0) {
+          totalTimeElem.textContent = formatTime(audio.duration);
+          scrubber.max = audio.duration;
+          scrubber.value = audio.currentTime;
         }
       }
 
-      // Initialize the SPA when the DOM is ready.
-      document.addEventListener("DOMContentLoaded", async () => {
-        // Fetch the topic and update the page title.
+      // Main initialization function
+      async function init() {
+        initAudioContext();
+        const mainAudio = document.getElementById("mainAudio");
+        const playPauseBtn = document.getElementById("playPauseButton");
+        const backBtn = document.getElementById("backButton");
+        const forwardBtn = document.getElementById("forwardButton");
+        const scrubber = document.getElementById("scrubber");
+
+        // Fetch and set page title from /title.txt
         try {
-          const topicResponse = await fetch("/topic.txt");
-          const topicText = await topicResponse.text();
-          document.title = topicText;
-          document.getElementById("page-title").innerText = topicText;
-        } catch (error) {
-          console.error("Error fetching /topic.txt:", error);
+          const resTitle = await fetch("/title.txt");
+          const titleText = await resTitle.text();
+          document.title = titleText;
+          document.getElementById("pageTitle").textContent = titleText;
+        } catch (err) {
+          console.error("Error fetching title.txt:", err);
         }
-
-        // Fetch and display text content from /exg.txt as paragraphs.
+      
+        // Fetch and display content from /text.txt
         try {
-          const textResponse = await fetch("/exg.txt");
-          const textContent = await textResponse.text();
-          const contentContainer = document.getElementById("content");
-          // Split on double newlines to form paragraphs.
-          const paragraphs = textContent.trim().split(/\n\s*\n/);
-          paragraphs.forEach((para) => {
-            const pEl = document.createElement("p");
-            pEl.textContent = para.trim();
-            contentContainer.appendChild(pEl);
+          const resText = await fetch("/text.txt");
+          const textData = await resText.text();
+          // Split into paragraphs by double newline
+          const paragraphs = textData.split(/\n{2,}/);
+          const contentDiv = document.getElementById("content");
+          paragraphs.forEach((p) => {
+            const paraElem = document.createElement("p");
+            paraElem.textContent = p.trim();
+            if (paraElem.textContent) {
+              contentDiv.appendChild(paraElem);
+            }
           });
-        } catch (error) {
-          console.error("Error fetching /exg.txt:", error);
+        } catch (err) {
+          console.error("Error fetching text.txt:", err);
         }
-
-        // Load, process, and set up the main audio.
-        const audioData = await loadMainAudio();
-        if (audioData) {
-          mainAudio = new Audio();
-          mainAudio.src = audioData.blobUrl;
-          mainAudio.loop = true;
-          mainAudio.addEventListener("loadedmetadata", () => {
-            document.getElementById("scrubber").max = mainAudio.duration;
-            document.getElementById("totalDuration").innerText = formatTime(
-              mainAudio.duration
-            );
-          });
-          mainAudio.addEventListener("timeupdate", () => {
-            document.getElementById("scrubber").value = mainAudio.currentTime;
-            document.getElementById("currentTime").innerText = formatTime(
-              mainAudio.currentTime
-            );
-          });
+      
+        // Fetch the main audio (/audio.mp3), append 10 seconds of silence,
+        // convert to a WAV Blob, and set it as the source for the audio element.
+        try {
+          const resAudio = await fetch("/audio.mp3");
+          const audioData = await resAudio.arrayBuffer();
+          const decodedBuffer = await audioCtx.decodeAudioData(audioData);
+          // Create new AudioBuffer with extra 10 seconds of silence
+          const extraSamples = audioCtx.sampleRate * 10;
+          const newLength = decodedBuffer.length + extraSamples;
+          const newBuffer = audioCtx.createBuffer(
+            decodedBuffer.numberOfChannels,
+            newLength,
+            decodedBuffer.sampleRate
+          );
+          for (let channel = 0; channel < decodedBuffer.numberOfChannels; channel++) {
+            const oldData = decodedBuffer.getChannelData(channel);
+            const newData = newBuffer.getChannelData(channel);
+            newData.set(oldData);
+            // The rest of newData is already zero (silence)
+          }
+          // Convert the new AudioBuffer to WAV and create a blob URL
+          const wavArrayBuffer = audioBufferToWav(newBuffer);
+          const wavBlob = new Blob([wavArrayBuffer], { type: "audio/wav" });
+          const objectUrl = URL.createObjectURL(wavBlob);
+          mainAudio.src = objectUrl;
+          mainAudio.load();
+        } catch (err) {
+          console.error("Error processing audio.mp3:", err);
         }
-
-        // Set up player control event listeners.
-        document.getElementById("playPauseBtn").addEventListener("click", () => {
-          if (!mainAudio) {
-            return;
+      
+        // Event Listeners for Audio Element
+      
+        // Update time & scrubber during playback
+        mainAudio.addEventListener("timeupdate", updateTime);
+      
+        // Update scrubber max on metadata loaded
+        mainAudio.addEventListener("loadedmetadata", updateTime);
+      
+        // Play/pause toggle button
+        playPauseBtn.addEventListener("click", async () => {
+          // Resume AudioContext if in suspended state (required by some browsers)
+          if (audioCtx.state === "suspended") {
+            await audioCtx.resume();
           }
           if (mainAudio.paused) {
             mainAudio.play();
-            startBinauralBeats();
-            document.getElementById("playPauseBtn").innerText = "Pause";
+            playPauseBtn.textContent = "Pause";
           } else {
             mainAudio.pause();
-            stopBinauralBeats();
-            document.getElementById("playPauseBtn").innerText = "Play";
+            playPauseBtn.textContent = "Play";
           }
         });
-        document.getElementById("backBtn").addEventListener("click", () => {
-          if (!mainAudio) return;
+      
+        // Backward 10s button
+        backBtn.addEventListener("click", () => {
           mainAudio.currentTime = Math.max(mainAudio.currentTime - 10, 0);
         });
-        document.getElementById("forwardBtn").addEventListener("click", () => {
-          if (!mainAudio) return;
-          mainAudio.currentTime = Math.min(mainAudio.currentTime + 10, mainAudio.duration);
+      
+        // Forward 10s button
+        forwardBtn.addEventListener("click", () => {
+          mainAudio.currentTime = Math.min(
+            mainAudio.currentTime + 10,
+            mainAudio.duration || mainAudio.currentTime + 10
+          );
         });
-        document.getElementById("scrubber").addEventListener("input", (e) => {
-          if (!mainAudio) return;
-          mainAudio.currentTime = e.target.value;
+      
+        // Scrubber (range slider) controls playback position
+        scrubber.addEventListener("input", () => {
+          mainAudio.currentTime = scrubber.value;
         });
-      });
+      
+        // Start binaural beats when audio plays and stop when paused
+        mainAudio.addEventListener("play", () => {
+          startBinauralBeats();
+        });
+      
+        mainAudio.addEventListener("pause", () => {
+          stopBinauralBeats();
+        });
+      }
+      
+      // Initialize when DOM is ready
+      document.addEventListener("DOMContentLoaded", init);
     </script>
   </body>
 </html>
