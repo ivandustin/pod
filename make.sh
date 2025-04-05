@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -euvxo pipefail
-export TTS=tts-1-hd
 [ -s topics.txt ] || pg
 shufi topics.txt
 draw topics.txt > topic.txt
 cpg
-TEMP= MODEL=o3-mini HIGH=1 exg2 < edit.txt > exg.txt
+reason exg2 < edit.txt > exg.txt
 tts edit.mp3 < edit.txt
 tts exg.mp3 < exg.txt
 cata audio.mp3 edit.mp3 exg.mp3
