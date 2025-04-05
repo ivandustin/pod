@@ -26,7 +26,7 @@ use as main audio
 if audio is playing 
 play binaural beats
 in the background
-102 hz right
+130 hz right
 100 hz left
 0.004 gain
 fade in
