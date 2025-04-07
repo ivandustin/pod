@@ -12,4 +12,4 @@ cat edit.txt exg.txt > cat.txt
 sens < cat.txt > sens.txt
 addnl < sens.txt > text.txt
 cp topic.txt title.txt
-strip text.txt
+stripi text.txt
