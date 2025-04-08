@@ -1,22 +1,31 @@
-
 spa
 html
 clean
 modern
-mobile app
 user friendly
-dark mode theme
+mobile app
+dark mode
 
-music player
+default page title is Listen
+
+show title
+get title at /title.txt
+update page title
+
+display text per paragraph
+get text from /text.txt
+
+audio player
 current time
 total duration
 play/pause button
-back and forward by 10s
-get title at /title.txt
-update page title
+back and forward button 10s
 play /audio.mp3
 loop audio
+15% height
 scrubber
+static
+bottom
 
 once audio is downloaded
 edit it and add 10s end pause
@@ -31,5 +40,5 @@ in the background
 0.004 gain
 fade in
 
-display text as paragraphs
-get text at /text.txt
+revalidate audio
+fetch cache reload
