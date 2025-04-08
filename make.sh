@@ -7,7 +7,8 @@ cpg
 reason exg2 < edit.txt > exg.txt
 tts edit.mp3 < edit.txt
 tts exg.mp3 < exg.txt
-cata audio.mp3 edit.mp3 exg.mp3
+silence 24000 mono 160k 5 pause.mp3
+cata audio.mp3 edit.mp3 pause.mp3 exg.mp3 pause.mp3 pause.mp3
 cat edit.txt exg.txt > cat.txt
 sens < cat.txt > sens.txt
 addnl < sens.txt > text.txt

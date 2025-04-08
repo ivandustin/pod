@@ -1,0 +1,7 @@
+audio player
+current time
+total duration
+play/pause button
+back and forward button 10s
+loop audio
+scrubber

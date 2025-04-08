@@ -1,3 +1,7 @@
 #!/usr/bin/env bash
-set -euvxo pipefail
-reason ai output html code < app.txt > app.html
+set -euo pipefail
+for file in src/*.txt
+do
+	cat $file
+	echo
+done | reason ai output html code > app.html

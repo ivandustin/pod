@@ -1,0 +1,2 @@
+white button icons when dark mode
+big button size

@@ -1,0 +1,2 @@
+each paragraph inside bubble
+subtle bubble color

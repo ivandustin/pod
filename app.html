@@ -5,341 +5,368 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Listen</title>
     <style>
-      /* Global Styles & Dark Mode */
-      * {
-        box-sizing: border-box;
-      }
+      /* Base & modern clean design */
       body {
         margin: 0;
-        padding: 0;
-        background-color: #121212;
-        color: #e0e0e0;
-        font-family: Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+          Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        background: #fff;
+        color: #000;
         line-height: 1.6;
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
       }
-      /* Main Content */
-      #content {
-        flex: 1;
-        padding: 20px;
-        padding-bottom: 20vh; /* extra space so content isn’t hidden behind player */
+      /* Container for content with extra space so fixed player won't cover text */
+      .container {
+        padding: 16px;
       }
-      h1 {
-        margin-top: 0;
-        font-size: 2rem;
-        text-align: center;
+      /* Bubble style for paragraphs */
+      .bubble {
+        background: #f0f0f0;
+        border-radius: 16px;
+        padding: 12px;
+        margin-bottom: 16px;
       }
-      #text-content p {
-        margin-bottom: 1em;
+      /* Give the content a bottom margin of about 50% viewport height */
+      .content {
+        margin-bottom: 50vh;
       }
-      /* Audio Player - fixed at bottom */
-      #audio-player {
+      /* Audio player fixed at the bottom */
+      .audio-player {
         position: fixed;
-        bottom: 0;
         left: 0;
         right: 0;
-        height: 15vh;
-        background-color: #1e1e1e;
+        bottom: 0;
+        background: inherit;
+        border-top: 1px solid #ccc;
+        padding: 12px 16px;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 10px 20px;
+        gap: 8px;
       }
-      #controls {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 15px;
+      /* Time info styling */
+      .time-info {
+        text-align: center;
+        font-size: 0.9rem;
+      }
+      /* Scrubber styling */
+      .scrubber {
         width: 100%;
       }
-      #controls button {
-        background-color: #333;
+      /* Control buttons container */
+      .controls {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+      }
+      /* Buttons: large clickable area, no default style */
+      .control-button {
+        background: none;
         border: none;
-        color: #e0e0e0;
-        font-size: 1.4rem;
-        padding: 8px 12px;
-        border-radius: 4px;
         cursor: pointer;
+        padding: 8px;
+        font-size: 2rem;
+        color: inherit;
       }
-      #controls button:hover {
-        background-color: #444;
+      /* SVG icons default size */
+      svg.size-6 {
+        width: 24px;
+        height: 24px;
       }
-      #controls span {
-        font-size: 1rem;
-      }
-      /* Scrubber style */
-      #scrubber {
-        width: 90%;
-        margin-top: 8px;
-      }
-      /* Mobile responsiveness */
-      @media (max-width: 600px) {
-        h1 {
-          font-size: 1.6rem;
+      /* Auto dark mode: light theme by default, white elements in dark */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #121212;
+          color: #fff;
         }
-        #controls button {
-          font-size: 1.2rem;
-          padding: 6px 10px;
+        .bubble {
+          background: rgba(255, 255, 255, 0.1);
+        }
+        .control-button svg {
+          fill: #fff;
+        }
+        .audio-player {
+          border-top: 1px solid #444;
         }
       }
     </style>
   </head>
   <body>
-    <div id="content">
-      <!-- Default title; will be updated from /title.txt -->
+    <div class="container">
+      <!-- Title loaded from /title.txt; default is "Listen" -->
       <h1 id="page-title">Listen</h1>
-      <!-- Paragraphs loaded from /text.txt -->
-      <div id="text-content"></div>
+      <!-- Paragraphs loaded from /text.txt will appear here, each wrapped in a "bubble" -->
+      <div id="content" class="content"></div>
     </div>
 
-    <!-- Audio Player Section -->
-    <div id="audio-player">
-      <div id="controls">
-        <button id="back" title="Back 10 seconds">⏪</button>
-        <button id="play-pause" title="Play / Pause">▶️</button>
-        <button id="forward" title="Forward 10 seconds">⏩</button>
-        <span id="current-time">0:00</span> / <span id="duration">0:00</span>
+    <!-- Hidden audio element that plays /audio.mp3 in a loop -->
+    <audio id="audio" loop preload="auto">
+      <source src="/audio.mp3" type="audio/mp3" />
+      Your browser does not support the audio element.
+    </audio>
+
+    <!-- Audio player fixed at the bottom of the viewport -->
+    <div class="audio-player">
+      <!-- Current time and total duration above scrubber -->
+      <div class="time-info">
+        <span id="current-time">0:00</span> / <span id="total-duration">0:00</span>
       </div>
-      <input type="range" id="scrubber" min="0" max="100" step="0.1" value="0" />
+      <!-- Interactive scrubber -->
+      <input
+        type="range"
+        id="scrubber"
+        class="scrubber"
+        min="0"
+        value="0"
+        step="0.1"
+      />
+      <!-- Controls: Back 10s, Play/Pause, Forward 10s -->
+      <div class="controls">
+        <!-- Back button using provided back icon SVG -->
+        <button id="back-button" class="control-button" title="Rewind 10 seconds">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="size-6"
+          >
+            <path
+              d="M9.195 18.44c1.25.714 2.805-.189 2.805-1.629v-2.34l6.945 3.968c1.25.715 2.805-.188 2.805-1.628V8.69c0-1.44-1.555-2.343-2.805-1.628L12 11.029v-2.34c0-1.44-1.555-2.343-2.805-1.628l-7.108 4.061c-1.26.72-1.26 2.536 0 3.256l7.108 4.061Z"
+            />
+          </svg>
+        </button>
+        <!-- Play/Pause toggle button: starts with play icon -->
+        <button id="play-pause-button" class="control-button" title="Play/Pause">
+          <svg
+            id="play-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="size-6"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <svg
+            id="pause-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="size-6"
+            style="display: none;"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+        <!-- Forward button using provided forward icon SVG -->
+        <button id="forward-button" class="control-button" title="Forward 10 seconds">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="size-6"
+          >
+            <path
+              d="M5.055 7.06C3.805 6.347 2.25 7.25 2.25 8.69v8.122c0 1.44 1.555 2.343 2.805 1.628L12 14.471v2.34c0 1.44 1.555 2.343 2.805 1.628l7.108-4.061c1.26-.72 1.26-2.536 0-3.256l-7.108-4.061C13.555 6.346 12 7.249 12 8.689v2.34L5.055 7.061Z"
+            />
+          </svg>
+        </button>
+      </div>
     </div>
-
-    <!-- Hidden audio element; its source will be set with a blob URL -->
-    <audio id="main-audio" preload="auto" loop style="display: none;"></audio>
 
     <script>
-      // Global variables
-      let audioContext; // for processing the main audio file
-      let beatAudioContext; // separate context for binaural beats
-      let binauralBeatsNodes = null; // store binaural beat nodes
-
-      // Helper: Format seconds as mm:ss
-      function formatTime(seconds) {
-        const m = Math.floor(seconds / 60);
-        const s = Math.floor(seconds % 60);
-        return m + ":" + (s < 10 ? "0" : "") + s;
-      }
-
-      // Fetch and update page title from /title.txt
-      fetch("/title.txt", { cache: "reload" })
-        .then((res) => res.text())
-        .then((txt) => {
-          document.getElementById("page-title").innerText = txt.trim();
-          document.title = txt.trim();
-        })
-        .catch((err) => console.error("Title fetch error:", err));
-
-      // Fetch and display text paragraphs from /text.txt
-      fetch("/text.txt", { cache: "reload" })
-        .then((res) => res.text())
-        .then((txt) => {
-          const container = document.getElementById("text-content");
-          // Split by double newlines to get paragraphs
-          txt.split("\n\n").forEach((para) => {
-            if (para.trim() !== "") {
-              const pElem = document.createElement("p");
-              pElem.innerText = para.trim();
-              container.appendChild(pElem);
-            }
-          });
-        })
-        .catch((err) => console.error("Text fetch error:", err));
-
-      // Append silence to an AudioBuffer
-      function appendSilence(buffer, silenceSeconds) {
-        const channels = buffer.numberOfChannels;
-        const sampleRate = buffer.sampleRate;
-        const silenceLength = Math.floor(silenceSeconds * sampleRate);
-        const newLength = buffer.length + silenceLength;
-        const newBuffer = audioContext.createBuffer(channels, newLength, sampleRate);
-
-        for (let channel = 0; channel < channels; channel++) {
-          const channelData = newBuffer.getChannelData(channel);
-          channelData.set(buffer.getChannelData(channel)); // copy original data; rest remains 0 (silence)
-        }
-        return newBuffer;
-      }
-
-      // Helper: Write a string to a DataView at a given offset
-      function writeString(view, offset, string) {
-        for (let i = 0; i < string.length; i++) {
-          view.setUint8(offset + i, string.charCodeAt(i));
-        }
-      }
-
-      // Encode an AudioBuffer into a WAV ArrayBuffer
-      function encodeWAV(buffer) {
-        const numChannels = buffer.numberOfChannels;
-        const sampleRate = buffer.sampleRate;
-        const bitsPerSample = 16;
-        const numSamples = buffer.length;
-        const blockAlign = numChannels * (bitsPerSample / 8);
-        const byteRate = sampleRate * blockAlign;
-        const dataSize = numSamples * blockAlign;
-        const bufferLength = 44 + dataSize;
-        const arrayBuffer = new ArrayBuffer(bufferLength);
-        const view = new DataView(arrayBuffer);
-
-        // RIFF header
-        writeString(view, 0, "RIFF");
-        view.setUint32(4, 36 + dataSize, true);
-        writeString(view, 8, "WAVE");
-        // fmt chunk
-        writeString(view, 12, "fmt ");
-        view.setUint32(16, 16, true); // chunk size
-        view.setUint16(20, 1, true); // format PCM
-        view.setUint16(22, numChannels, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, byteRate, true);
-        view.setUint16(32, blockAlign, true);
-        view.setUint16(34, bitsPerSample, true);
-        // data chunk
-        writeString(view, 36, "data");
-        view.setUint32(40, dataSize, true);
-
-        // Write PCM samples
-        let offset = 44;
-        for (let i = 0; i < numSamples; i++) {
-          for (let channel = 0; channel < numChannels; channel++) {
-            let sample = buffer.getChannelData(channel)[i];
-            // Clamp the sample
-            sample = Math.max(-1, Math.min(1, sample));
-            // Scale to 16-bit PCM
-            const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
-            view.setInt16(offset, intSample, true);
-            offset += 2;
-          }
-        }
-        return arrayBuffer;
-      }
-
-      // Setup main audio: fetch, process (append 10s silent pause), encode and assign blob URL
-      async function setupAudio() {
-        // Create an AudioContext for decoding and processing
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      // Load title and paragraphs with cache reload
+      async function loadContent() {
         try {
-          const response = await fetch("/audio.mp3", { cache: "reload" });
-          const arrayBuffer = await response.arrayBuffer();
-          audioContext.decodeAudioData(
-            arrayBuffer,
-            (decodedBuffer) => {
-              // Append 10 seconds of silence after the audio data
-              const newBuffer = appendSilence(decodedBuffer, 10);
-              // Encode the new buffer as a WAV file so we can use it as our audio source
-              const wavArrayBuffer = encodeWAV(newBuffer);
-              const blob = new Blob([wavArrayBuffer], { type: "audio/wav" });
-              const blobUrl = URL.createObjectURL(blob);
-              const mainAudio = document.getElementById("main-audio");
-              mainAudio.src = blobUrl;
-              mainAudio.load();
-            },
-            (error) => {
-              console.error("Error decoding audio data:", error);
-            }
-          );
-        } catch (err) {
-          console.error("Audio fetch error:", err);
-        }
-
-        // Setup audio player controls
-        const mainAudio = document.getElementById("main-audio");
-        const playPauseBtn = document.getElementById("play-pause");
-        const backBtn = document.getElementById("back");
-        const forwardBtn = document.getElementById("forward");
-        const scrubber = document.getElementById("scrubber");
-        const currentTimeDisplay = document.getElementById("current-time");
-        const durationDisplay = document.getElementById("duration");
-
-        mainAudio.addEventListener("loadedmetadata", () => {
-          scrubber.max = mainAudio.duration;
-          durationDisplay.innerText = formatTime(mainAudio.duration);
-        });
-
-        mainAudio.addEventListener("timeupdate", () => {
-          currentTimeDisplay.innerText = formatTime(mainAudio.currentTime);
-          scrubber.value = mainAudio.currentTime;
-        });
-
-        scrubber.addEventListener("input", () => {
-          mainAudio.currentTime = scrubber.value;
-        });
-
-        playPauseBtn.addEventListener("click", () => {
-          if (mainAudio.paused) {
-            mainAudio.play();
-          } else {
-            mainAudio.pause();
+          const titleResponse = await fetch("/title.txt", { cache: "reload" });
+          if (titleResponse.ok) {
+            const titleText = (await titleResponse.text()).trim();
+            document.getElementById("page-title").textContent =
+              titleText || "Listen";
+            document.title = titleText || "Listen";
           }
-        });
-
-        backBtn.addEventListener("click", () => {
-          mainAudio.currentTime = Math.max(mainAudio.currentTime - 10, 0);
-        });
-
-        forwardBtn.addEventListener("click", () => {
-          mainAudio.currentTime = Math.min(mainAudio.currentTime + 10, mainAudio.duration);
-        });
-
-        // Update play/pause button icon and handle binaural beats
-        mainAudio.addEventListener("play", () => {
-          playPauseBtn.innerText = "⏸️";
-          startBinauralBeats();
-        });
-        mainAudio.addEventListener("pause", () => {
-          playPauseBtn.innerText = "▶️";
-          stopBinauralBeats();
-        });
+          const textResponse = await fetch("/text.txt", { cache: "reload" });
+          if (textResponse.ok) {
+            const textData = await textResponse.text();
+            // Split text into paragraphs (assuming paragraphs are separated by two newlines)
+            const paragraphs = textData.split("\n\n");
+            const contentDiv = document.getElementById("content");
+            paragraphs.forEach((p) => {
+              const paraDiv = document.createElement("div");
+              paraDiv.className = "bubble";
+              paraDiv.textContent = p.trim();
+              contentDiv.appendChild(paraDiv);
+            });
+          }
+        } catch (err) {
+          console.error("Error loading content:", err);
+        }
       }
+      loadContent();
 
-      // Binaural Beats: start two oscillators (left 100 Hz, right 130 Hz) with low gain & fade in
-      function startBinauralBeats() {
-        if (binauralBeatsNodes) return; // already running
-        beatAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+      // Audio Player Elements
+      const audio = document.getElementById("audio");
+      const playPauseBtn = document.getElementById("play-pause-button");
+      const playIcon = document.getElementById("play-icon");
+      const pauseIcon = document.getElementById("pause-icon");
+      const backBtn = document.getElementById("back-button");
+      const forwardBtn = document.getElementById("forward-button");
+      const currentTimeDisplay = document.getElementById("current-time");
+      const totalDurationDisplay = document.getElementById("total-duration");
+      const scrubber = document.getElementById("scrubber");
 
-        const oscLeft = beatAudioContext.createOscillator();
-        oscLeft.frequency.value = 100;
-        const oscRight = beatAudioContext.createOscillator();
-        oscRight.frequency.value = 130;
+      // When the metadata is loaded update the total duration and the scrubber max value
+      audio.addEventListener("loadedmetadata", () => {
+        totalDurationDisplay.textContent = formatTime(audio.duration);
+        scrubber.max = audio.duration;
+      });
 
-        const gainLeft = beatAudioContext.createGain();
-        const gainRight = beatAudioContext.createGain();
-        // Start with zero gain for fade in
-        gainLeft.gain.value = 0;
-        gainRight.gain.value = 0;
+      // A flag to prevent timeupdate events from overriding the scrubber value while dragging.
+      let isSeeking = false;
+      
+      // Update current time and, if not seeking, the scrubber value while audio plays.
+      audio.addEventListener("timeupdate", () => {
+        currentTimeDisplay.textContent = formatTime(audio.currentTime);
+        if (!isSeeking) {
+          scrubber.value = audio.currentTime;
+        }
+      });
 
-        const pannerLeft = beatAudioContext.createStereoPanner();
-        pannerLeft.pan.value = -1;
-        const pannerRight = beatAudioContext.createStereoPanner();
-        pannerRight.pan.value = 1;
+      // Allow user to scrub through the audio.
+      // While dragging we update the display, then on release we set the audio position.
+      scrubber.addEventListener("mousedown", () => { isSeeking = true; });
+      scrubber.addEventListener("touchstart", () => { isSeeking = true; });
+      scrubber.addEventListener("input", () => {
+        currentTimeDisplay.textContent = formatTime(scrubber.value);
+      });
+      scrubber.addEventListener("mouseup", () => {
+        isSeeking = false;
+        audio.currentTime = scrubber.value;
+      });
+      scrubber.addEventListener("touchend", () => {
+        isSeeking = false;
+        audio.currentTime = scrubber.value;
+      });
 
-        // Connect the audio graph for each oscillator
-        oscLeft.connect(gainLeft).connect(pannerLeft).connect(beatAudioContext.destination);
-        oscRight.connect(gainRight).connect(pannerRight).connect(beatAudioContext.destination);
+      // Play/Pause toggle
+      playPauseBtn.addEventListener("click", () => {
+        if (audio.paused) {
+          audio.play();
+        } else {
+          audio.pause();
+          stopBinaural();
+        }
+        updatePlayPauseIcons();
+      });
 
-        oscLeft.start();
-        oscRight.start();
+      // Rewind 10 seconds
+      backBtn.addEventListener("click", () => {
+        // Only adjust if metadata is available
+        if (audio.readyState > 0) {
+          audio.currentTime = Math.max(0, audio.currentTime - 10);
+        }
+      });
 
-        // Fade in the gain to 0.004 over 2 seconds
-        const now = beatAudioContext.currentTime;
-        gainLeft.gain.linearRampToValueAtTime(0.004, now + 2);
-        gainRight.gain.linearRampToValueAtTime(0.004, now + 2);
+      // Forward 10 seconds
+      forwardBtn.addEventListener("click", () => {
+        if (audio.readyState > 0) {
+          audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
+        }
+      });
 
-        binauralBeatsNodes = { oscLeft, oscRight, gainLeft, gainRight, beatAudioContext };
-      }
+      // Update play/pause icons and binaural beats on playing/pausing
+      audio.addEventListener("play", () => {
+        updatePlayPauseIcons();
+        startBinaural();
+      });
+      audio.addEventListener("pause", () => {
+        updatePlayPauseIcons();
+        stopBinaural();
+      });
 
-      function stopBinauralBeats() {
-        if (binauralBeatsNodes) {
-          binauralBeatsNodes.oscLeft.stop();
-          binauralBeatsNodes.oscRight.stop();
-          binauralBeatsNodes.beatAudioContext.close();
-          binauralBeatsNodes = null;
+      function updatePlayPauseIcons() {
+        if (audio.paused) {
+          playIcon.style.display = "block";
+          pauseIcon.style.display = "none";
+        } else {
+          playIcon.style.display = "none";
+          pauseIcon.style.display = "block";
         }
       }
 
-      // Initialize after page load
-      window.addEventListener("load", setupAudio);
+      // Format time as minutes:seconds
+      function formatTime(seconds) {
+        const min = Math.floor(seconds / 60);
+        const sec = Math.floor(seconds % 60)
+          .toString()
+          .padStart(2, "0");
+        return `${min}:${sec}`;
+      }
+
+      // Binaural Beats Implementation using Web Audio API
+      let audioCtx;
+      let leftOsc, rightOsc;
+      let leftGain, rightGain;
+      let binauralStarted = false;
+
+      function startBinaural() {
+        if (binauralStarted) return;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Create oscillators for left (100 Hz) and right (130 Hz)
+        leftOsc = audioCtx.createOscillator();
+        rightOsc = audioCtx.createOscillator();
+        leftOsc.frequency.value = 100;
+        rightOsc.frequency.value = 130;
+
+        // Create gain nodes with initial zero gain
+        leftGain = audioCtx.createGain();
+        rightGain = audioCtx.createGain();
+        leftGain.gain.value = 0;
+        rightGain.gain.value = 0;
+
+        // Create stereo panner nodes to separate channels
+        const leftPanner = audioCtx.createStereoPanner();
+        leftPanner.pan.value = -1;
+        const rightPanner = audioCtx.createStereoPanner();
+        rightPanner.pan.value = 1;
+
+        // Connect oscillators -> gains -> panners -> destination
+        leftOsc.connect(leftGain).connect(leftPanner).connect(audioCtx.destination);
+        rightOsc.connect(rightGain).connect(rightPanner).connect(audioCtx.destination);
+
+        // Start the oscillators
+        leftOsc.start();
+        rightOsc.start();
+
+        // Fade in the gain to 0.006 over 2 seconds
+        leftGain.gain.linearRampToValueAtTime(0.006, audioCtx.currentTime + 2);
+        rightGain.gain.linearRampToValueAtTime(0.006, audioCtx.currentTime + 2);
+
+        binauralStarted = true;
+      }
+
+      function stopBinaural() {
+        if (!binauralStarted) return;
+        // Fade out the gain over 1 second and then stop oscillators
+        leftGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);
+        rightGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);
+        setTimeout(() => {
+          try {
+            leftOsc.stop();
+            rightOsc.stop();
+          } catch (e) {
+            // Oscillators might have already stopped
+          }
+          audioCtx.close();
+          binauralStarted = false;
+        }, 1100);
+      }
     </script>
   </body>
 </html>

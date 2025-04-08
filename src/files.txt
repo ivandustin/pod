@@ -1,0 +1,3 @@
+paragraphs /text.txt
+title /title.txt
+audio /audio.mp3
