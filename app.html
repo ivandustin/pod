@@ -344,9 +344,9 @@
         leftOsc.start();
         rightOsc.start();
 
-        // Fade in the gain to 0.006 over 2 seconds
-        leftGain.gain.linearRampToValueAtTime(0.006, audioCtx.currentTime + 2);
-        rightGain.gain.linearRampToValueAtTime(0.006, audioCtx.currentTime + 2);
+        // Fade in the gain to 0.005 over 2 seconds
+        leftGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime + 2);
+        rightGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime + 2);
 
         binauralStarted = true;
       }

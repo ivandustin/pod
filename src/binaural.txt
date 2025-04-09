@@ -3,5 +3,5 @@ play binaural beats
 in the background
 158 hz right
 150 hz left
-0.006 gain
+0.005 gain
 fade in
