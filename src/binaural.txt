@@ -1,7 +1,7 @@
 if audio is playing 
 play binaural beats
 in the background
-158 hz right
-150 hz left
-0.005 gain
+104 hz right
+100 hz left
+0.004 gain
 fade in

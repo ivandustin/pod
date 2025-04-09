@@ -318,11 +318,11 @@
         if (binauralStarted) return;
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // Create oscillators for left (150 Hz) and right (158 Hz)
+        // Create oscillators for left (100 Hz) and right (104 Hz)
         leftOsc = audioCtx.createOscillator();
         rightOsc = audioCtx.createOscillator();
-        leftOsc.frequency.value = 150;
-        rightOsc.frequency.value = 158;
+        leftOsc.frequency.value = 100;
+        rightOsc.frequency.value = 104;
 
         // Create gain nodes with initial zero gain
         leftGain = audioCtx.createGain();
@@ -344,9 +344,9 @@
         leftOsc.start();
         rightOsc.start();
 
-        // Fade in the gain to 0.005 over 10 seconds
-        leftGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime + 10);
-        rightGain.gain.linearRampToValueAtTime(0.005, audioCtx.currentTime + 10);
+        // Fade in the gain to 0.004 over 10 seconds
+        leftGain.gain.linearRampToValueAtTime(0.004, audioCtx.currentTime + 10);
+        rightGain.gain.linearRampToValueAtTime(0.004, audioCtx.currentTime + 10);
 
         binauralStarted = true;
       }
