@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euvxo pipefail
+while read -r line
+do
+	if [ -n "$line" ]
+	then
+		out=$(mktemp XXX.mp3)
+		echo $line | tts $out
+		echo $out
+	fi
+done
