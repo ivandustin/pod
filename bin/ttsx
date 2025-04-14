@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -euvxo pipefail
-for file in "$@"
-do
+for file in "$@"; do
 	out=${file%.*}.mp3
 	tmp=$(mktemp)
-	trap "rm -f $tmp" EXIT
-	trap "rm -f $(<$tmp)" EXIT
-	ttsl < $file > $tmp
-	cata $out $(<$tmp)
+	trap 'rm -f $tmp' EXIT
+	trap 'rm -f $(<"$tmp")' EXIT
+	ttsl <"$file" >"$tmp"
+	cata "$out" "$(<"$tmp")"
 done
