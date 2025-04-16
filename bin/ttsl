@@ -3,7 +3,7 @@ set -euvxo pipefail
 while read -r line; do
 	if [ "$line" != "" ]; then
 		out=$(mktemp XXX.mp3)
-		echo "$line" | tts "$out"
-		echo "$out"
+		echo $line | tts $out
+		echo $out
 	fi
 done
