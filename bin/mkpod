@@ -4,8 +4,8 @@ set -euvxo pipefail
 shufi topics.txt
 draw topics.txt >topic.txt
 cpg
-MODEL=deepseek-reasoner ai exegesis <edit.txt >exgraw.txt
-reason prose <exgraw.txt >exg.txt
+ai exegesis <edit.txt >exgraw.txt
+prose <exgraw.txt >exg.txt
 silence 24000 mono 160k 5 pause.mp3
 trap 'rm pause.mp3' EXIT
 ttsx edit.txt exg.txt
