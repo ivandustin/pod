@@ -5,7 +5,8 @@ shufi topics.txt
 draw topics.txt >topic.txt
 cpg
 deepseek exegesis <edit.txt >exgraw.txt
-reason prose <exgraw.txt >exg.txt
+reason prose <exgraw.txt >exgprose.txt
+reason expandrefs <exgprose.txt >exg.txt
 silence 24000 mono 160k 5 pause.mp3
 trap 'rm pause.mp3' EXIT
 ttsx edit.txt exg.txt
